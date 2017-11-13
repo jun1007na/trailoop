@@ -13,8 +13,8 @@ typedef struct {
     double x;
     double y;
     double color[3];
-    double width;
-    double height;
+    double dx;
+    double dy;
     int active;
 } block;
 
@@ -22,7 +22,7 @@ typedef struct {
 
 double rotAng = 0.0;
 int keyIn = 0;
-int bar_speed = 5;
+int bar_speed = 50;
 block blocks[B_COUNT][B_COUNT];
 block progress_bar[P_B_COUNT];
 
@@ -167,6 +167,7 @@ void init(void){
 
     progress_bar[i].x = x; //ブロック座標
     progress_bar[i].y = y;
+    progress_bar[i].dy = 0.0;
     progress_bar[i].color[0] = 0.8;
     progress_bar[i].color[1] = 0.8;
     progress_bar[i].color[2] = 0.8;
@@ -225,6 +226,7 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 void display(void){
   int i,j;
   static int speed_count = 0;
+  static int active_prog_bar = 0;
   double r, g, b;
   double theta, dt, x, y;
   
@@ -264,12 +266,28 @@ void display(void){
   //進捗バー描画
   for(i=0; i<P_B_COUNT; i++){
     glColor3d(progress_bar[i].color[0],progress_bar[i].color[1],progress_bar[i].color[2]);
-    glRectf(progress_bar[i].x, progress_bar[i].y+0.2, progress_bar[i].x+0.5, progress_bar[i].y);
+    glRectf(progress_bar[i].x,
+            progress_bar[i].y+progress_bar[i].dy,
+            progress_bar[i].x+0.5,
+            progress_bar[i].y);
   }
 
   //ベース
   glColor3d(1.0,1.0,1.0);
   glRectf(-4, -3.5, 4, -4);
+  
+  //遷移時処理
+  if(speed_count == bar_speed){
+    progress_bar[active_prog_bar].dy = 0.5;
+    for(i=0; i<P_B_COUNT; i++)  progress_bar[i].dy -= 0.04;
+    
+    active_prog_bar++;
+    if(active_prog_bar == P_B_COUNT) active_prog_bar = 0;
+
+    speed_count = 0;
+  }else{
+    speed_count++;
+  }
 
   //glRectf(blocks[0][0].x, blocks[0][0].y, blocks[0][0].x-0.05, blocks[0][0].y-0.05);
 
