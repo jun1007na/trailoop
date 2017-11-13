@@ -5,8 +5,9 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 #define B_COUNT 20 //ブロック数
+#define P_B_COUNT 26 //進捗バー数
 #define B_MARGIN 0.25 //B_COUNTと一緒に変更する
-#define REFRESH_RATE 200 //msec
+#define REFRESH_RATE 20 //msec
 
 typedef struct {   
     double x;
@@ -21,7 +22,9 @@ typedef struct {
 
 double rotAng = 0.0;
 int keyIn = 0;
+int bar_speed = 5;
 block blocks[B_COUNT][B_COUNT];
+block progress_bar[P_B_COUNT];
 
 /* いろいろ座標変換してくれる関数
 mode
@@ -29,10 +32,9 @@ mode
   1:px座標(X)=>ブロック座標
   2:px座標(Y)=>ブロック座標
   3:px座標=>gl2D座標) */
-double convertV(int x, int mode)
+double convertV(int x, double zTH, int mode)
 {
   int bcTH, pxTH, pxMG;
-  double zTH=3.0;
   double a;
 
   bcTH = B_COUNT/2; // 20/2=10
@@ -140,8 +142,8 @@ void init(void){
   //ブロック初期化
   for(i=0; i<B_COUNT; i++){
     for(j=0; j<B_COUNT; j++){
-      x = convertV(i,0); //ブロック座標変換
-      y = convertV(j,0);
+      x = convertV(i,3.0,0); //ブロック座標変換
+      y = convertV(j,3.0,0);
 
       //レインボー表示するためhsv表色系から生成する
       hsv2rgb((360.0/B_COUNT)*i, (128.0/B_COUNT)*j+127.0, 255, &r, &g, &b);
@@ -156,6 +158,10 @@ void init(void){
       //printf("%f\n", (360.0/COLOR_COUNT)*i);
     }
     //printf("\n");
+  }
+  //進捗バー初期化
+  for(i=0; i<P_B_COUNT; i++){
+//    x = 
   }
 }
 
@@ -194,8 +200,8 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
    if(button==GLUT_LEFT_BUTTON && state == GLUT_DOWN)
   {
     printf("Pushed at (%d, %d)\n",x,y); 
-    x = convertV(x,1);
-    y = convertV(y,2);
+    x = convertV(x,3.0,1);
+    y = convertV(y,3.0,2);
     if((x==-1)||(y==-1)||blocks[x][y].active==1){
       blocks[x][y].active = 0;
     }else{
@@ -209,6 +215,7 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 
 void display(void){
   int i,j;
+  static int speed_count = 0;
   double r, g, b;
   double theta, dt, x, y;
   
@@ -233,7 +240,7 @@ void display(void){
   
 
   //ベース
-  //glRectf(-3, -1.0, 3, -2);
+  glRectf(-4, -3.5, 4, -4);
 
   //ブロック描画
   for(i=0; i<B_COUNT; i++){
