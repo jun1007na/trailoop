@@ -6,7 +6,7 @@
 #define WINDOW_HEIGHT 800
 #define B_COUNT 20 //ブロック数
 #define P_B_COUNT 26 //進捗バー数
-#define B_MARGIN 0.25 //B_COUNTと一緒に変更する
+#define B_WIDTH 0.25 //B_COUNTと一緒に変更する
 #define REFRESH_RATE 20 //msec
 
 typedef struct {   
@@ -32,12 +32,12 @@ mode
   1:px座標(X)=>ブロック座標
   2:px座標(Y)=>ブロック座標
   3:px座標=>gl2D座標) */
-double convertV(int x, double zTH, int mode)
+double convertV(int x, int block_count, double zTH, int mode)
 {
   int bcTH, pxTH, pxMG;
   double a;
 
-  bcTH = B_COUNT/2; // 20/2=10
+  bcTH = block_count/2; // 20/2=10
   pxTH = WINDOW_HEIGHT/2; // 800/2=400
   pxMG = WINDOW_HEIGHT/(2*(zTH+1)); // 800/8=100
 
@@ -53,14 +53,14 @@ double convertV(int x, double zTH, int mode)
       break;
     case 1:
       if((x>100)&&(x<700)){
-        a = (int)((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/B_COUNT));
+        a = (int)((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/block_count));
         break;
       }
       a = -1.0;
       break;
     case 2:
       if((x>100)&&(x<700)){
-        a = (int)((B_COUNT-1)-((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/B_COUNT)));
+        a = (int)((block_count-1)-((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/block_count)));
         break;
       }
       a = -1.0;
@@ -142,8 +142,8 @@ void init(void){
   //ブロック初期化
   for(i=0; i<B_COUNT; i++){
     for(j=0; j<B_COUNT; j++){
-      x = convertV(i,3.0,0); //ブロック座標変換
-      y = convertV(j,3.0,0);
+      x = convertV(i, B_COUNT, 3.0, 0); //ブロック座標変換
+      y = convertV(j, B_COUNT, 3.0, 0);
 
       //レインボー表示するためhsv表色系から生成する
       hsv2rgb((360.0/B_COUNT)*i, (128.0/B_COUNT)*j+127.0, 255, &r, &g, &b);
@@ -159,9 +159,18 @@ void init(void){
     }
     //printf("\n");
   }
+  
   //進捗バー初期化
   for(i=0; i<P_B_COUNT; i++){
-//    x = 
+    x = convertV(i, P_B_COUNT, 4.0, 0);
+    y = -3.6;
+
+    progress_bar[i].x = x; //ブロック座標
+    progress_bar[i].y = y;
+    progress_bar[i].color[0] = 0.8;
+    progress_bar[i].color[1] = 0.8;
+    progress_bar[i].color[2] = 0.8;
+    progress_bar[i].active = 1; //初期値は表示
   }
 }
 
@@ -200,8 +209,8 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
    if(button==GLUT_LEFT_BUTTON && state == GLUT_DOWN)
   {
     printf("Pushed at (%d, %d)\n",x,y); 
-    x = convertV(x,3.0,1);
-    y = convertV(y,3.0,2);
+    x = convertV(x, B_COUNT, 3.0, 1);
+    y = convertV(y, B_COUNT, 3.0, 2);
     if((x==-1)||(y==-1)||blocks[x][y].active==1){
       blocks[x][y].active = 0;
     }else{
@@ -237,10 +246,6 @@ void display(void){
     theta += dt;
   }
   glEnd();*/
-  
-
-  //ベース
-  glRectf(-4, -3.5, 4, -4);
 
   //ブロック描画
   for(i=0; i<B_COUNT; i++){
@@ -251,10 +256,20 @@ void display(void){
         glColor3d(blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
       }
       
-      glRectf(blocks[i][j].x, blocks[i][j].y, blocks[i][j].x+B_MARGIN, blocks[i][j].y+B_MARGIN);
+      glRectf(blocks[i][j].x, blocks[i][j].y, blocks[i][j].x+B_WIDTH, blocks[i][j].y+B_WIDTH);
     }
     //printf("\n");
   }
+
+  //進捗バー描画
+  for(i=0; i<P_B_COUNT; i++){
+    glColor3d(progress_bar[i].color[0],progress_bar[i].color[1],progress_bar[i].color[2]);
+    glRectf(progress_bar[i].x, progress_bar[i].y+0.2, progress_bar[i].x+0.5, progress_bar[i].y);
+  }
+
+  //ベース
+  glColor3d(1.0,1.0,1.0);
+  glRectf(-4, -3.5, 4, -4);
 
   //glRectf(blocks[0][0].x, blocks[0][0].y, blocks[0][0].x-0.05, blocks[0][0].y-0.05);
 
