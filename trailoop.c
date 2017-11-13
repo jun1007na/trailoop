@@ -4,8 +4,9 @@
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
-#define B_COUNT 20
-#define B_MARGIN 0.14 //B_COUNT/100 *3
+#define B_COUNT 20 //ブロック数
+#define B_MARGIN 0.25 //B_COUNTと一緒に変更する
+#define REFRESH_RATE 200 //msec
 
 typedef struct {   
     double x;
@@ -13,7 +14,7 @@ typedef struct {
     double color[3];
     double width;
     double height;
-
+    int active;
 } block;
 
 
@@ -22,26 +23,57 @@ double rotAng = 0.0;
 int keyIn = 0;
 block blocks[B_COUNT][B_COUNT];
 
-
+/* いろいろ座標変換してくれる関数
+mode
+  0:ブロック座標
+  1:px座標(X)=>ブロック座標
+  2:px座標(Y)=>ブロック座標
+  3:px座標=>gl2D座標) */
 double convertV(int x, int mode)
 {
-  int bcTH, pxTH;
-  double zTH=2.0;
+  int bcTH, pxTH, pxMG;
+  double zTH=3.0;
   double a;
+
+  bcTH = B_COUNT/2; // 20/2=10
+  pxTH = WINDOW_HEIGHT/2; // 800/2=400
+  pxMG = WINDOW_HEIGHT/(2*(zTH+1)); // 800/8=100
 
   switch(mode){
     case 0:
-      bcTH = B_COUNT/2; // 10/2=5
-      pxTH = WINDOW_WIDTH/2; // 800/2=400
       if(x < bcTH){
         a = (zTH/bcTH *x) - zTH; // 3.0/5*1 -3.0
       }else{
-        x -= bcTH; // 10-5=5
-        a = (zTH/bcTH *x); // 3.0/5*1
+        x -= bcTH; // 20-10=10
+        a = (zTH/bcTH *x); // 3.0/10*1
       }
       //printf("%f\n", a);
-    break;
-    default: break;
+      break;
+    case 1:
+      if((x>100)&&(x<700)){
+        a = (int)((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/B_COUNT));
+        break;
+      }
+      a = -1.0;
+      break;
+    case 2:
+      if((x>100)&&(x<700)){
+        a = (int)((B_COUNT-1)-((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/B_COUNT)));
+        break;
+      }
+      a = -1.0;
+      break;
+    case 3:
+      if(x < pxTH){ //x < 400px
+        a = (zTH/pxTH *x) - zTH; // 3.0/400*1 -3.0
+      }else{
+        x -= pxTH; // 800-400=400
+        a = (zTH/pxTH *x); // 3.0/400*1
+      }
+      break;
+    default: 
+      a = -1.0;
+      break;
   }
 
   return a;
@@ -91,12 +123,13 @@ void resize(int w, int h){
   glLoadIdentity();
 
   if(w-h > 0){
-    gluOrtho2D(-3.0*w/h, 3.0*w/h, -3.0, 3.0);
+    gluOrtho2D(-4.0*w/h, 4.0*w/h, -4.0, 4.0);
   }else{
-    gluOrtho2D(-3.0, 3.0, -3.0*h/w, 3.0*h/w);
+    gluOrtho2D(-4.0, 4.0, -4.0*h/w, 4.0*h/w);
   }
 }
 
+/* 初期化関数(画面, ブロックetc.) */
 void init(void){
   int i,j;
   double x,y;
@@ -107,15 +140,18 @@ void init(void){
   //ブロック初期化
   for(i=0; i<B_COUNT; i++){
     for(j=0; j<B_COUNT; j++){
-      x = convertV(i,0);
+      x = convertV(i,0); //ブロック座標変換
       y = convertV(j,0);
+
+      //レインボー表示するためhsv表色系から生成する
       hsv2rgb((360.0/B_COUNT)*i, (128.0/B_COUNT)*j+127.0, 255, &r, &g, &b);
 
-      blocks[i][j].x = x;
+      blocks[i][j].x = x; //ブロック座標
       blocks[i][j].y = y;
-      blocks[i][j].color[0] = r/255.0;
+      blocks[i][j].color[0] = r/255.0; //255段階を0.0~1.0に変換
       blocks[i][j].color[1] = g/255.0;
       blocks[i][j].color[2] = b/255.0;
+      blocks[i][j].active = 0; //初期値は非表示
       //printf("%f, %f, %f\n", blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
       //printf("%f\n", (360.0/COLOR_COUNT)*i);
     }
@@ -138,7 +174,7 @@ static void timer(int dummy){
   }
   keyIn=0;
   glutPostRedisplay();
-  glutTimerFunc(5000, timer, 0);
+  glutTimerFunc(REFRESH_RATE, timer, 0);
 }
 
 void keyin(unsigned char key, int x, int y){
@@ -157,8 +193,17 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 {
    if(button==GLUT_LEFT_BUTTON && state == GLUT_DOWN)
   {
-        printf("Pushed at (%d, %d)\n",x,y); 
-   }
+    printf("Pushed at (%d, %d)\n",x,y); 
+    x = convertV(x,1);
+    y = convertV(y,2);
+    if((x==-1)||(y==-1)||blocks[x][y].active==1){
+      blocks[x][y].active = 0;
+    }else{
+      blocks[x][y].active = 1;
+    }
+    
+    printf("Convert to (%d, %d)\n",x,y); 
+  }
 
 }
 
@@ -188,14 +233,17 @@ void display(void){
   
 
   //ベース
-  //glRectf(-3, -1.8, 3, -2);
-
-  
+  //glRectf(-3, -1.0, 3, -2);
 
   //ブロック描画
   for(i=0; i<B_COUNT; i++){
     for(j=0; j<B_COUNT; j++){
-      glColor3d(blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
+      if(blocks[i][j].active == 0){
+        glColor3d(0.2, 0.2, 0.2);
+      }else{
+        glColor3d(blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
+      }
+      
       glRectf(blocks[i][j].x, blocks[i][j].y, blocks[i][j].x+B_MARGIN, blocks[i][j].y+B_MARGIN);
     }
     //printf("\n");
