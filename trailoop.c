@@ -16,10 +16,10 @@ typedef struct {
     double dx;
     double dy;
     int active;
-} block;
+} block;  //ブロック系部品の構造体
 
 
-
+//グローバル関数
 double rotAng = 0.0;
 int keyIn = 0;
 int bar_speed = 50;
@@ -31,7 +31,7 @@ mode
   0:ブロック座標
   1:px座標(X)=>ブロック座標
   2:px座標(Y)=>ブロック座標
-  3:px座標=>gl2D座標) */
+  3:px座標=>gl2D座標 */
 double convertV(int x, int block_count, double zTH, int mode)
 {
   int bcTH, pxTH, pxMG;
@@ -42,7 +42,7 @@ double convertV(int x, int block_count, double zTH, int mode)
   pxMG = WINDOW_HEIGHT/(2*(zTH+1)); // 800/8=100
 
   switch(mode){
-    case 0:
+    case 0:  //ブロック座標
       if(x < bcTH){
         a = (zTH/bcTH *x) - zTH; // 3.0/5*1 -3.0
       }else{
@@ -51,21 +51,21 @@ double convertV(int x, int block_count, double zTH, int mode)
       }
       //printf("%f\n", a);
       break;
-    case 1:
+    case 1:  //px座標(X)=>ブロック座標
       if((x>100)&&(x<700)){
         a = (int)((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/block_count));
         break;
       }
       a = -1.0;
       break;
-    case 2:
+    case 2:  //px座標(Y)=>ブロック座標
       if((x>100)&&(x<700)){
         a = (int)((block_count-1)-((x-pxMG)/((WINDOW_HEIGHT-(2*pxMG))/block_count)));
         break;
       }
       a = -1.0;
       break;
-    case 3:
+    case 3:  //px座標=>gl2D座標
       if(x < pxTH){ //x < 400px
         a = (zTH/pxTH *x) - zTH; // 3.0/400*1 -3.0
       }else{
@@ -73,7 +73,7 @@ double convertV(int x, int block_count, double zTH, int mode)
         a = (zTH/pxTH *x); // 3.0/400*1
       }
       break;
-    default: 
+    default:  //例外
       a = -1.0;
       break;
   }
@@ -81,6 +81,7 @@ double convertV(int x, int block_count, double zTH, int mode)
   return a;
 }
 
+/* HSVtoRGB変換(カラーグラデーション用) */
 void hsv2rgb(double h, double s, double v, double *r, double *g, double *b){
   int i;
   double max, min;
@@ -119,6 +120,7 @@ void hsv2rgb(double h, double s, double v, double *r, double *g, double *b){
   }
 }
 
+/* 画面リサイズ（ウインドウサイズ変更に対しての対応） */
 void resize(int w, int h){
   glViewport(0,0,w,h);
   glMatrixMode(GL_PROJECTION);
@@ -162,16 +164,16 @@ void init(void){
   
   //進捗バー初期化
   for(i=0; i<P_B_COUNT; i++){
-    x = convertV(i, P_B_COUNT, 4.0, 0);
+    x = convertV(i, P_B_COUNT, 4.0, 0); //ブロック座標変換
     y = -3.6;
 
     progress_bar[i].x = x; //ブロック座標
     progress_bar[i].y = y;
     progress_bar[i].dy = 0.0;
-    progress_bar[i].color[0] = 0.8;
+    progress_bar[i].color[0] = 0.8;  //灰色指定
     progress_bar[i].color[1] = 0.8;
     progress_bar[i].color[2] = 0.8;
-    progress_bar[i].active = 1; //初期値は表示
+    progress_bar[i].active = 1; //初期値は表示（使ってない）
   }
 }
 
@@ -179,6 +181,7 @@ void idle(void){
   glutPostRedisplay();
 }
 
+/* 画面描画間隔タイマー */
 static void timer(int dummy){
 
   if(keyIn==1){
@@ -193,6 +196,7 @@ static void timer(int dummy){
   glutTimerFunc(REFRESH_RATE, timer, 0);
 }
 
+/* キーボード入力系 */
 void keyin(unsigned char key, int x, int y){
   switch(key){
     case ' ':  keyIn=1;  break;
@@ -205,13 +209,16 @@ void keyin(unsigned char key, int x, int y){
   }
 }
 
+/* マウス入力系 */
 void mouse(int button, int state, int x, int y) //マウスコールバック関数の定義
 {
-   if(button==GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+   if(button==GLUT_LEFT_BUTTON && state == GLUT_DOWN)  //左クリック
   {
     printf("Pushed at (%d, %d)\n",x,y); 
-    x = convertV(x, B_COUNT, 3.0, 1);
+    x = convertV(x, B_COUNT, 3.0, 1);  //px座標からブロック指定する座標への変換
     y = convertV(y, B_COUNT, 3.0, 2);
+
+    //表示・非表示の切り替え
     if((x==-1)||(y==-1)||blocks[x][y].active==1){
       blocks[x][y].active = 0;
     }else{
@@ -223,6 +230,7 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 
 }
 
+/* 画面描画関数 */
 void display(void){
   int i,j;
   static int speed_count = 0;
@@ -230,7 +238,7 @@ void display(void){
   double r, g, b;
   double theta, dt, x, y;
   
-
+  /* 初期設定 */
   glClearColor(0, 0, 0, 0);    /* 黒背景 */
   glClear(GL_COLOR_BUFFER_BIT);  /* カラーバッファ初期化 */
   glColor3d(1.0,1.0,1.0);  /* 色 */
@@ -252,12 +260,13 @@ void display(void){
   //ブロック描画
   for(i=0; i<B_COUNT; i++){
     for(j=0; j<B_COUNT; j++){
+      //block構造体中の色情報より、ブロックの色の設定
       if(blocks[i][j].active == 0){
         glColor3d(0.2, 0.2, 0.2);
       }else{
         glColor3d(blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
       }
-      
+      //ブロック描画
       glRectf(blocks[i][j].x, blocks[i][j].y, blocks[i][j].x+B_WIDTH, blocks[i][j].y+B_WIDTH);
     }
     //printf("\n");
@@ -265,7 +274,9 @@ void display(void){
 
   //進捗バー描画
   for(i=0; i<P_B_COUNT; i++){
+    //色設定
     glColor3d(progress_bar[i].color[0],progress_bar[i].color[1],progress_bar[i].color[2]);
+    //進捗バー描画
     glRectf(progress_bar[i].x,
             progress_bar[i].y+progress_bar[i].dy,
             progress_bar[i].x+0.5,
@@ -275,17 +286,20 @@ void display(void){
   //ベース
   glColor3d(1.0,1.0,1.0);
   glRectf(-4, -3.5, 4, -4);
-  
+
   //遷移時処理
   if(speed_count == bar_speed){
-    progress_bar[active_prog_bar].dy = 0.5;
-    for(i=0; i<P_B_COUNT; i++)  progress_bar[i].dy -= 0.04;
+    progress_bar[active_prog_bar].dy = 0.5;  //アクティブのバーを最大値に設定
+    for(i=0; i<P_B_COUNT; i++)  progress_bar[i].dy -= 0.04;  //すべてのバーを減少させて階段状に
     
+    //アクティブバーの変更
     active_prog_bar++;
     if(active_prog_bar == P_B_COUNT) active_prog_bar = 0;
-
+    
+    //次の遷移時処理を行うための再初期化
     speed_count = 0;
   }else{
+    //遷移時処理を行わない（スキップ）
     speed_count++;
   }
 
@@ -294,6 +308,7 @@ void display(void){
   glutSwapBuffers();
 }
 
+/* メイン関数 */
 int main(int argc, char** argv){
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
