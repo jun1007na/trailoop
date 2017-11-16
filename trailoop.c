@@ -127,6 +127,15 @@ void hsv2rgb(double h, double s, double v, double *r, double *g, double *b){
   }
 }
 
+void printString(float x, float y, char* str, int length){
+	float z = -1.0f;
+	glRasterPos3f(x, y, z);
+	
+	for (int i = 0; i < length; i++){
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, str[i]);
+	}
+}
+
 /* 画面リサイズ（ウインドウサイズ変更に対しての対応） */
 void resize(int w, int h){
   glViewport(0,0,w,h);
@@ -260,8 +269,10 @@ void display(void){
   int i,j;
   static int speed_count = 0;
   static int active_prog_bar = 0;
+  static int refresh_count = 0;
   double r, g, b;
   double theta, dt, x, y;
+  char buf[6] = {0};
   
   /* 初期設定 */
   glClearColor(0, 0, 0, 0);    /* 黒背景 */
@@ -320,6 +331,11 @@ void display(void){
   glColor3d(1.0,1.0,1.0);
   glRectf(-4, -3.5, 4, -4);
 
+  //スコア等文字表示
+  printString(-3.8, -2.5, "Score", 6);
+  itoa(refresh_count,buf,10);
+  printString(-3.8, -2.8, buf, 6);  //回数
+
   //遷移時処理
   if(speed_count == bar_speed){
     progress_bar[active_prog_bar].dy = 0.5;  //アクティブのバーを最大値に設定
@@ -327,6 +343,7 @@ void display(void){
     
     //アクティブバーの変更
     active_prog_bar++;
+
     //遷移時処理
     if(active_prog_bar == P_B_COUNT){
       for(i=0; i<B_COUNT; i++){
@@ -338,12 +355,13 @@ void display(void){
           }
         }
       }
-
+      //上部にブロックの新規作成
       for(i=0; i<5; i++)  blocks[rand()%B_COUNT][B_COUNT-1].active = 1;
-      
+
+      refresh_count++;
       active_prog_bar = 0;
     }
-    
+        
     //次の遷移時処理を行うための再初期化
     speed_count = 0;
   }else{
