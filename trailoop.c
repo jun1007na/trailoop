@@ -18,13 +18,19 @@ typedef struct {
     int active;
 } block;  //ブロック系部品の構造体
 
+typedef struct{
+  int x;
+  int y;
+} player;
+
 
 //グローバル関数
 double rotAng = 0.0;
-int keyIn = 0;
+int keyIn = -1;
 int bar_speed = 50;
 block blocks[B_COUNT][B_COUNT];
 block progress_bar[P_B_COUNT];
+player player1;
 
 /* いろいろ座標変換してくれる関数
 mode
@@ -141,6 +147,10 @@ void init(void){
   
   glClearColor(0.0, 0.0, 0.0, 1.0);
 
+  //プレイヤー初期化
+  player1.x = B_COUNT/2;
+  player1.y = 0;
+
   //ブロック初期化
   for(i=0; i<B_COUNT; i++){
     for(j=0; j<B_COUNT; j++){
@@ -199,9 +209,22 @@ static void timer(int dummy){
 /* キーボード入力系 */
 void keyin(unsigned char key, int x, int y){
   switch(key){
-    case ' ':  keyIn=1;  break;
-    case 'y':  keyIn=2;  break;
-    case 'z':  keyIn=3;  break;
+    case 'w':
+      blocks[player1.x][player1.y].active = 0;
+      if((player1.y+1)<B_COUNT)  player1.y += 1;
+      break;
+    case 'a':
+      blocks[player1.x][player1.y].active = 0;
+      if((player1.x-1)>-1)  player1.x -= 1;
+      break;
+    case 's':
+      blocks[player1.x][player1.y].active = 0;
+      if((player1.y-1)>-1)  player1.y -= 1;
+      break;
+    case 'd':
+      blocks[player1.x][player1.y].active = 0;
+      if((player1.x+1)<B_COUNT)  player1.x += 1;
+      break;
     case '\033':
     case 'c':
     case 'q': exit(0);  break;
@@ -244,18 +267,24 @@ void display(void){
   glColor3d(1.0,1.0,1.0);  /* 色 */
   
   
-  /* 頂点間に線を引く．始点と終点も結ぶ */
-  /*
-  glBegin(GL_LINE_LOOP);
-  dt = 4.0*M_PI/5.0;  // 描画する頂点の角度差
-  theta = rotAng;  // 初期角度
-  for(i=0; i<5; i++){    // 座標指定と描画
-    x = cos(theta);
-    y = sin(theta);
-    glVertex2d(x,y);
-    theta += dt;
-  }
-  glEnd();*/
+  /*/プレイヤー
+  switch(keyIn){
+    case 0:
+      player1.y += 1;
+      break;
+    case 1:
+      player1.x -= 1;
+      break;
+    case 2:
+      player1.y -= 1;
+      break;
+    case 3:
+      player1.x += 1;
+      break;
+    default:
+    break;
+  }*/
+  blocks[player1.x][player1.y].active = 2;
 
   //ブロック描画
   for(i=0; i<B_COUNT; i++){
@@ -263,8 +292,10 @@ void display(void){
       //block構造体中の色情報より、ブロックの色の設定
       if(blocks[i][j].active == 0){
         glColor3d(0.2, 0.2, 0.2);
-      }else{
+      }else if(blocks[i][j].active == 1){
         glColor3d(blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
+      }else{
+        glColor3d(1.0, 1.0, 1.0);
       }
       //ブロック描画
       glRectf(blocks[i][j].x, blocks[i][j].y, blocks[i][j].x+B_WIDTH, blocks[i][j].y+B_WIDTH);
@@ -294,7 +325,9 @@ void display(void){
     
     //アクティブバーの変更
     active_prog_bar++;
-    if(active_prog_bar == P_B_COUNT) active_prog_bar = 0;
+    if(active_prog_bar == P_B_COUNT){
+      active_prog_bar = 0;
+    }
     
     //次の遷移時処理を行うための再初期化
     speed_count = 0;
