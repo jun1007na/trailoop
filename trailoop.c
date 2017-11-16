@@ -1,7 +1,14 @@
+//
+//  trailoop.c
+//  trailoop v1.0
+//
+//  Created by junya nakamura on 2017/11/11.
+//  Copyright © 2017年 junya nakamura. All rights reserved.
+//
 #include<stdio.h>
 #include<stdlib.h>
-#include<GL/glut.h>
 #include<math.h>
+#include<GL/glut.h>
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
@@ -24,7 +31,7 @@ typedef struct {
 typedef struct{
   int x;
   int y;
-} player;
+} player;  //プレイヤー座標格納
 
 
 //グローバル関数
@@ -129,6 +136,7 @@ void hsv2rgb(double h, double s, double v, double *r, double *g, double *b){
   }
 }
 
+/*文字出力関数 */
 void printString(float x, float y, char* str, int length){
 	float z = -1.0f;
 	glRasterPos3f(x, y, z);
@@ -179,10 +187,7 @@ void init(void){
       blocks[i][j].color[1] = g/255.0;
       blocks[i][j].color[2] = b/255.0;
       blocks[i][j].active = 0; //初期値は非表示
-      //printf("%f, %f, %f\n", blocks[i][j].color[0], blocks[i][j].color[1], blocks[i][j].color[2]);
-      //printf("%f\n", (360.0/COLOR_COUNT)*i);
     }
-    //printf("\n");
   }
   
   //進捗バー初期化
@@ -214,36 +219,36 @@ static void timer(int dummy){
 /* キーボード入力系 */
 void keyin(unsigned char key, int x, int y){
   switch(key){
-    case 'w':
+    case 'w':  //前進
     case 'W':
       blocks[player1.x][player1.y].active = 0;
       if((player1.y+1)<B_COUNT)  player1.y += 1;
       break;
-    case 'a':
+    case 'a':  //左
     case 'A':
       blocks[player1.x][player1.y].active = 0;
       if((player1.x-1)>-1)  player1.x -= 1;
       break;
-    case 's':
+    case 's':  //後進
     case 'S':
       blocks[player1.x][player1.y].active = 0;
       if((player1.y-1)>-1)  player1.y -= 1;
       break;
-    case 'd':
+    case 'd':  //右
     case 'D':
       blocks[player1.x][player1.y].active = 0;
       if((player1.x+1)<B_COUNT)  player1.x += 1;
       break;
-    case 'n':
+    case 'n':  //NEW GAME!!
     case 'N':
-      flag = 0;
-      refresh_count = 0;
-      blocks[player1.x][player1.y].active = 0;
+      flag = 0;  //フラグを戻す
+      refresh_count = 0;  //スコアリセット
+      blocks[player1.x][player1.y].active = 0;  //プレイヤー位置リセット
       //プレイヤー初期化
       player1.x = B_COUNT/2;
       player1.y = 0;
       break;
-    case '\033':
+    case '\033':  //終了
     case 'c':
     case 'q': exit(0);  break;
     default: break;
@@ -255,7 +260,7 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 {
    if(button==GLUT_LEFT_BUTTON && state == GLUT_DOWN)  //左クリック
   {
-    printf("Pushed at (%d, %d)\n",x,y); 
+    //printf("Pushed at (%d, %d)\n",x,y); 
     x = convertV(x, B_COUNT, 3.0, 1);  //px座標からブロック指定する座標への変換
     y = convertV(y, B_COUNT, 3.0, 2);
 
@@ -266,7 +271,7 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
       blocks[x][y].active = 1;
     }
     
-    printf("Convert to (%d, %d)\n",x,y); 
+    //printf("Convert to (%d, %d)\n",x,y); 
   }
 
 }
@@ -278,7 +283,7 @@ void display(void){
   static int active_prog_bar = 0;
   static int all_refresh_count = 0;
   double r, g, b;
-  char buf[6] = {0};
+  char buf[6] = {0};  //文字用バッファ
   
   /* 初期設定 */
   glClearColor(0, 0, 0, 0);    /* 黒背景 */
@@ -286,7 +291,7 @@ void display(void){
   glColor3d(1.0,1.0,1.0);  /* 色 */
   
   
-  //プレイヤー当たり判定
+  //プレイヤー当たり判定とゲームオーバー画面
   if((blocks[player1.x][player1.y].active == 1)||(flag == 1)){
     printString(0, 0, "GAME OVER", 10);
     printString(0, -0.6, "PRESS 'Q', 'C' KEY TO EXIT", 26);
@@ -295,13 +300,12 @@ void display(void){
     itoa(refresh_count,buf,10);
     printString(0, -1.6, buf, 6);
     
-
-    glutSwapBuffers();
+    glutSwapBuffers();  //描画
     
     flag = 1;
     return;
   }
-  blocks[player1.x][player1.y].active = 2;
+  blocks[player1.x][player1.y].active = 2;  //ブロックにプレイヤーが存在する
 
   //ブロック描画
   for(i=0; i<B_COUNT; i++){
@@ -317,7 +321,6 @@ void display(void){
       //ブロック描画
       glRectf(blocks[i][j].x, blocks[i][j].y, blocks[i][j].x+B_WIDTH, blocks[i][j].y+B_WIDTH);
     }
-    //printf("\n");
   }
 
   //進捗バー描画
@@ -331,7 +334,7 @@ void display(void){
             progress_bar[i].y);
   }
 
-  //ベース
+  //白ベース
   glColor3d(1.0,1.0,1.0);
   glRectf(-4, -3.5, 4, -4);
 
@@ -358,13 +361,13 @@ void display(void){
     //アクティブバーの変更
     active_prog_bar++;
 
-    //遷移時処理
+    //遷移時処理（ゲージが右に行ったとき）
     if(active_prog_bar == P_B_COUNT){
       //ブロックの移動
       for(i=0; i<B_COUNT; i++){
         blocks[i][0].active = 0;
         for(j=1; j<B_COUNT; j++){
-          if(blocks[i][j].active == 1){
+          if(blocks[i][j].active == 1){  //ブロックを下に一つ下げる処理
             blocks[i][j].active = 0;
             blocks[i][j-1].active = 1;
           }
@@ -376,7 +379,7 @@ void display(void){
       //スピード変更
       bar_speed = DEFAULT_SPEED - 2*(refresh_count/10);
       
-
+      //カウント増加
       refresh_count++;
       all_refresh_count++;
       active_prog_bar = 0;
@@ -388,8 +391,6 @@ void display(void){
     //遷移時処理を行わない（スキップ）
     speed_count++;
   }
-
-  //glRectf(blocks[0][0].x, blocks[0][0].y, blocks[0][0].x-0.05, blocks[0][0].y-0.05);
 
   glutSwapBuffers();
 }
