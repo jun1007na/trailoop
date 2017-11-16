@@ -205,14 +205,6 @@ void idle(void){
 /* 画面描画間隔タイマー */
 static void timer(int dummy){
 
-  if(keyIn==1){
-    rotAng += 3.0*M_PI/180.0;
-  }else if(keyIn==2){
-    
-  }else if(keyIn==3){
-    
-  }
-  keyIn=0;
   glutPostRedisplay();
   glutTimerFunc(REFRESH_RATE, timer, 0);
 }
@@ -266,12 +258,11 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 
 /* 画面描画関数 */
 void display(void){
-  int i,j;
+  int i,j,flag = 0;
   static int speed_count = 0;
   static int active_prog_bar = 0;
   static int refresh_count = 0;
   double r, g, b;
-  double theta, dt, x, y;
   char buf[6] = {0};
   
   /* 初期設定 */
@@ -280,23 +271,11 @@ void display(void){
   glColor3d(1.0,1.0,1.0);  /* 色 */
   
   
-  /*/プレイヤー
-  switch(keyIn){
-    case 0:
-      player1.y += 1;
-      break;
-    case 1:
-      player1.x -= 1;
-      break;
-    case 2:
-      player1.y -= 1;
-      break;
-    case 3:
-      player1.x += 1;
-      break;
-    default:
-    break;
-  }*/
+  //プレイヤー当たり判定
+  if(blocks[player1.x][player1.y].active == 1){
+    printf("OUT\n");
+    flag = 1;
+  }
   blocks[player1.x][player1.y].active = 2;
 
   //ブロック描画
@@ -346,6 +325,7 @@ void display(void){
 
     //遷移時処理
     if(active_prog_bar == P_B_COUNT){
+      //ブロックの移動
       for(i=0; i<B_COUNT; i++){
         blocks[i][0].active = 0;
         for(j=1; j<B_COUNT; j++){
