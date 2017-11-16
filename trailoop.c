@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<GL/glut.h>
 #include<math.h>
 
@@ -146,6 +147,7 @@ void init(void){
   double r, g, b;
   
   glClearColor(0.0, 0.0, 0.0, 1.0);
+  srand(time(NULL));
 
   //プレイヤー初期化
   player1.x = B_COUNT/2;
@@ -325,7 +327,20 @@ void display(void){
     
     //アクティブバーの変更
     active_prog_bar++;
+    //遷移時処理
     if(active_prog_bar == P_B_COUNT){
+      for(i=0; i<B_COUNT; i++){
+        blocks[i][0].active = 0;
+        for(j=1; j<B_COUNT; j++){
+          if(blocks[i][j].active == 1){
+            blocks[i][j].active = 0;
+            blocks[i][j-1].active = 1;
+          }
+        }
+      }
+
+      for(i=0; i<5; i++)  blocks[rand()%B_COUNT][B_COUNT-1].active = 1;
+      
       active_prog_bar = 0;
     }
     
