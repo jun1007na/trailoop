@@ -9,6 +9,8 @@
 #define P_B_COUNT 26 //進捗バー数
 #define B_WIDTH 0.25 //B_COUNTと一緒に変更する
 #define REFRESH_RATE 20 //msec
+#define DEFAULT_SPEED 30 //ブロックスピード
+#define DEFAULT_CREATE_BLOCKS 6 //生成ブロック数
 
 typedef struct {   
     double x;
@@ -26,14 +28,14 @@ typedef struct{
 
 
 //グローバル関数
-double rotAng = 0.0;
-int keyIn = -1;
-int bar_speed = 50;
+int bar_speed = DEFAULT_SPEED;
+int refresh_count = 0;
+int flag = 0;
 block blocks[B_COUNT][B_COUNT];
 block progress_bar[P_B_COUNT];
 player player1;
 
-/* いろいろ座標変換してくれる関数
+/* 座標変換関数
 mode
   0:ブロック座標
   1:px座標(X)=>ブロック座標
@@ -213,20 +215,33 @@ static void timer(int dummy){
 void keyin(unsigned char key, int x, int y){
   switch(key){
     case 'w':
+    case 'W':
       blocks[player1.x][player1.y].active = 0;
       if((player1.y+1)<B_COUNT)  player1.y += 1;
       break;
     case 'a':
+    case 'A':
       blocks[player1.x][player1.y].active = 0;
       if((player1.x-1)>-1)  player1.x -= 1;
       break;
     case 's':
+    case 'S':
       blocks[player1.x][player1.y].active = 0;
       if((player1.y-1)>-1)  player1.y -= 1;
       break;
     case 'd':
+    case 'D':
       blocks[player1.x][player1.y].active = 0;
       if((player1.x+1)<B_COUNT)  player1.x += 1;
+      break;
+    case 'n':
+    case 'N':
+      flag = 0;
+      refresh_count = 0;
+      blocks[player1.x][player1.y].active = 0;
+      //プレイヤー初期化
+      player1.x = B_COUNT/2;
+      player1.y = 0;
       break;
     case '\033':
     case 'c':
@@ -258,10 +273,10 @@ void mouse(int button, int state, int x, int y) //マウスコールバック関
 
 /* 画面描画関数 */
 void display(void){
-  int i,j,flag = 0;
+  int i,j;
   static int speed_count = 0;
   static int active_prog_bar = 0;
-  static int refresh_count = 0;
+  static int all_refresh_count = 0;
   double r, g, b;
   char buf[6] = {0};
   
@@ -272,9 +287,19 @@ void display(void){
   
   
   //プレイヤー当たり判定
-  if(blocks[player1.x][player1.y].active == 1){
-    printf("OUT\n");
+  if((blocks[player1.x][player1.y].active == 1)||(flag == 1)){
+    printString(0, 0, "GAME OVER", 10);
+    printString(0, -0.6, "PRESS 'Q', 'C' KEY TO EXIT", 26);
+    printString(0, -0.9, "'N' KEY TO NEW GAME!!", 21);
+    printString(0, -1.3, "Score", 6);
+    itoa(refresh_count,buf,10);
+    printString(0, -1.6, buf, 6);
+    
+
+    glutSwapBuffers();
+    
     flag = 1;
+    return;
   }
   blocks[player1.x][player1.y].active = 2;
 
@@ -311,9 +336,19 @@ void display(void){
   glRectf(-4, -3.5, 4, -4);
 
   //スコア等文字表示
-  printString(-3.8, -2.5, "Score", 6);
+  printString(-3.8, -1.4, "Speed", 5);
+  itoa(bar_speed,buf,10);
+  printString(-3.8, -1.7, buf, 6);  //スピード
+
+  printString(-3.8, -2.0, "AllScore", 8);
+  itoa(all_refresh_count,buf,10);
+  printString(-3.8, -2.3, buf, 6);  //全回数
+
+  printString(-3.8, -2.6, "Score", 5);
   itoa(refresh_count,buf,10);
-  printString(-3.8, -2.8, buf, 6);  //回数
+  printString(-3.8, -2.9, buf, 6);  //回数
+
+  
 
   //遷移時処理
   if(speed_count == bar_speed){
@@ -336,9 +371,14 @@ void display(void){
         }
       }
       //上部にブロックの新規作成
-      for(i=0; i<5; i++)  blocks[rand()%B_COUNT][B_COUNT-1].active = 1;
+      for(i=0; i<DEFAULT_CREATE_BLOCKS; i++)  blocks[rand()%B_COUNT][B_COUNT-1].active = 1;
+      
+      //スピード変更
+      bar_speed = DEFAULT_SPEED - 2*(refresh_count/10);
+      
 
       refresh_count++;
+      all_refresh_count++;
       active_prog_bar = 0;
     }
         
