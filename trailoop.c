@@ -351,7 +351,10 @@ void display(void){
   itoa(refresh_count,buf,10);
   printString(-3.8, -2.9, buf, 6);  //回数
 
-  
+  printString(-3.9, 2.2, "HOW TO :", 8);
+  printString(-3.6, 1.8, "W", 1);
+  printString(-3.72, 1.5, "A S D", 5);
+
 
   //遷移時処理
   if(speed_count == bar_speed){
